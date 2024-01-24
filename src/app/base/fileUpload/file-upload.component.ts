@@ -1,7 +1,7 @@
 import {Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {FileUploadFacadeToken} from "./tokens/fileUploadFacadeToken";
 import {FileUploadFacadeService} from "../../core/services/facadeManagers/file-upload.facade.service";
-import {BehaviorSubject, map, Subject, switchMap, takeUntil} from "rxjs";
+import {BehaviorSubject, map, Subject, takeUntil} from "rxjs";
 
 @Component({
     selector: 'app-file-upload',
@@ -15,10 +15,10 @@ import {BehaviorSubject, map, Subject, switchMap, takeUntil} from "rxjs";
 export class FileUploadComponent implements OnInit, OnDestroy{
     @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>
 
-    public fileFromInput$: Subject<any> = new Subject<any>(); //todo как в такой ситуации быть, пробовал варианты с интерфейсом, который в самом низу компонента.
+    public fileFromInput$: Subject<Event> = new Subject<Event>();
     public processingButton$: Subject<void> = new Subject<void>();
-    public isLoading$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
     private destroy$: Subject<boolean> = new Subject<boolean>();
+    public isLoading$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
 
     constructor(@Inject(FileUploadFacadeToken) private fileUploadFacadeService: IFileUploadManager) {
     }
@@ -29,7 +29,7 @@ export class FileUploadComponent implements OnInit, OnDestroy{
 
     initializeSideEffects(): void {
         this.fileFromInput$.pipe(
-            map((file) => file.target.files[0]),
+            map((event) => (event.target as HTMLInputElement).files[0]),
             takeUntil(this.destroy$)
         ).subscribe(file => {
             this.isLoading$.next(true);
@@ -40,6 +40,7 @@ export class FileUploadComponent implements OnInit, OnDestroy{
             takeUntil(this.destroy$)
         ).subscribe(_ => {
             this.fileUploadFacadeService.updateTotalSize();
+            this.clearFileSize();
         })
     }
     clearFileSize(): void {
@@ -60,7 +61,4 @@ export interface IFileUploadManager {
     clearFileSize(): void;
 }
 
-interface EventInputChange extends Event{
-    target: HTMLInputElement;
-}
 
