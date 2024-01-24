@@ -1,0 +1,5 @@
+<div class="container">
+    <input type="file" #fileInput (change)="fileFromInput$.next($event)">
+    <button [disabled]="!(isLoading$ | async)" (click)="processingButton$.next()">Обработать</button>
+    <button (click)="clearFileSize()">Очистить</button>
+</div>

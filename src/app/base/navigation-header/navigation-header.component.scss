@@ -1,0 +1,17 @@
+:host {
+    display: block;
+    padding: 20px 0 20px 0;
+    background: #c9dbe8;
+}
+
+.header-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+        nav {
+            button:not(:last-child) {
+                margin-right: 15px;
+            }
+        }
+
+}
