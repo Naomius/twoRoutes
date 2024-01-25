@@ -18,7 +18,7 @@ export class FileUploadComponent implements OnInit, OnDestroy{
     public fileFromInput$: Subject<Event> = new Subject<Event>();
     public processingButton$: Subject<void> = new Subject<void>();
     private destroy$: Subject<boolean> = new Subject<boolean>();
-    public isLoading$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
+    public isBtnDisabled$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
 
     constructor(@Inject(FileUploadFacadeToken) private fileUploadFacadeService: IFileUploadManager) {
     }
@@ -32,7 +32,7 @@ export class FileUploadComponent implements OnInit, OnDestroy{
             map((event) => (event.target as HTMLInputElement).files[0]),
             takeUntil(this.destroy$)
         ).subscribe(file => {
-            this.isLoading$.next(true);
+            this.isBtnDisabled$.next(true);
             this.fileUploadFacadeService.fileSelected(file);
         })
 
@@ -44,7 +44,7 @@ export class FileUploadComponent implements OnInit, OnDestroy{
         })
     }
     clearFileSize(): void {
-        this.isLoading$.next(false);
+        this.isBtnDisabled$.next(false);
         this.fileInput.nativeElement.value = '';
         this.fileUploadFacadeService.clearFileSize();
     }

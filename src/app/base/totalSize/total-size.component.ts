@@ -14,18 +14,22 @@ import {Observable} from "rxjs";
 })
 export class TotalSizeComponent implements OnInit{
 
-    fileSize$!: Observable<number>
+    fileSize$!: Observable<number>;
     constructor(@Inject(TotalSizeFacadeToken) private totalSizeFacadeService: ITotalSIzeManager) {
     }
 
     ngOnInit(): void {
         this.fileSize$ = this.totalSizeFacadeService.FileSize;
+        // this.initializeSideEffects();
     }
 
     clearFileSize(): void {
         this.totalSizeFacadeService.clearFileSize();
     }
 
+    initializeSideEffects(): void {
+        this.totalSizeFacadeService.FileSize.subscribe(console.log)
+    }
 }
 
 export interface ITotalSIzeManager {

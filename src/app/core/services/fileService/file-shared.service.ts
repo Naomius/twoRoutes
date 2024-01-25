@@ -1,70 +1,95 @@
 import {Injectable} from '@angular/core';
 import {
-    BehaviorSubject,
-    map,
+    filter,
+    map, merge,
     Observable,
-    of, skip, startWith,
+    scan, share, shareReplay,
     Subject,
-    take,
-    tap,
-    withLatestFrom
+    take, tap,
 } from "rxjs";
 
 @Injectable({
   providedIn: 'root'
 })
 export class FileSharedService{
-    private readonly filesInBase$!: Observable<number>;
 
+    private readonly totalFileSize$: Observable<number>; //todo поместим в него merge size и file
+    private processCount$: Observable<number>;
+
+    private clearFileSize$: Subject<void> = new Subject<void>();
+    private updateTotalSize$: Subject<void> = new Subject<void>();
     private fileFromInput$: Subject<File> = new Subject<File>();
-    private totalFileSize$: BehaviorSubject<number> = new BehaviorSubject<number>(0);
-
-    private processCount: number = 0;
     constructor() {
-        this.filesInBase$ = this.totalFileSize$;
-        this.setFileSize();
+        this.processCount$ = this.updateTotalSize$.pipe(
+            scan((prev, count) => {
+                return prev + 1;
+            }, 0)
+        )
+
+        this.totalFileSize$ = merge(
+            this.clearFileSize$.pipe(
+                map(() => ({action: 'clearSize', value: 0}))
+            ),
+            this.fileFromInput$.pipe(
+                tap(console.log),
+                map((file): { action: 'initial', value: number } => {
+                    if (file) {
+                        return {action: 'initial', value: file.size}
+                    } else {
+                        return null;
+                    }
+                }),
+            ),
+            this.processCount$.pipe(
+                map((count): { action: 'update', value: number } => {
+                    return {action: 'update', value: count}
+                })
+            )
+        ).pipe(
+            filter((value) => value !== null),
+            scan(
+                (acc, current) => {
+                    if (current.action === 'initial') {
+                        const originalSize = current.value;
+                        const accumulatedSize = acc.size;
+
+                        const increasedSize = acc.counter % 2 !== 0 ? originalSize * 1.5 : originalSize;
+                        return { size: accumulatedSize + increasedSize, counter: acc.counter + 1 };
+
+                    } else if (current.action === 'clearSize') {
+                        return { size: 0, counter: 0 };
+                    } else {
+                        return acc;
+                    }
+                },
+                { size: 0, counter: 0 }
+            ),
+            map((acc) => acc.size),
+            share(),
+            shareReplay({refCount: true, bufferSize: 1})
+        );
+
+        // this.totalFileSize$.subscribe(console.log)
     }
 
     get FilesSize(): Observable<number> {
-        return this.filesInBase$
+        return this.totalFileSize$
     }
     updateTotalSize(): void {
-        of(null).pipe(
-            withLatestFrom(this.totalFileSize$),
-            tap(([_, currentSize]) => {
-                console.log(`Оригинальный размер: ${currentSize}`);
-                this.processCount++;
-            }),
-            map(([_, currentSize]) => {
-                if (this.processCount % 2 === 0) {
-                    return currentSize;
-                } else {
-                    return currentSize * 1.5;
-                }
-            }),
-            tap(updatedSize => {
-                console.log(`Обработанный размер: ${updatedSize}`);
-            }),
-        ).subscribe(updatedSize => {
-            this.totalFileSize$.next(updatedSize);
-        });
+        this.updateTotalSize$.next()
     }
 
     fileSelected(file: File): void {
+        console.log(file)
         this.fileFromInput$.next(file);
     }
 
     clearFileSize(): void {
-        this.fileFromInput$.next(null);
+        this.clearFileSize$.next();
     }
 
-    setFileSize(): void {
-        this.fileFromInput$.pipe(
-            tap(file => {
-                this.totalFileSize$.next(file.size)
-            }),
-            take(1),
-        ).subscribe()
+    clearFileFromInput(): void {
+        this.fileFromInput$.next(null);
     }
 
 }

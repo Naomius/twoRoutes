@@ -16,6 +16,6 @@ export class FileUploadFacadeService implements IFileUploadManager {
     }
 
     clearFileSize(): void {
-        this.fileService.clearFileSize();
+        this.fileService.clearFileFromInput();
     }
 }
